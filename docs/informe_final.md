@@ -6,12 +6,11 @@
 |---|---|
 | Asignatura | SIS-234 |
 | Título | Puerta inteligente IoT con ESP32, RFID-RC522, SG90 y AWS IoT Core |
-| Institución y carrera | [Completar] |
-| Docente | [Completar] |
-| Integrantes y grupo | [Completar nombres, grupo y contribuciones reales] |
+| Institución y carrera | Ingenieria de Sistemas - Universidad Catolica Boliviana  |
+| Integrantes y grupo | Leonardo Guillermo Köller, Ariel Jesus Mamani, Luis Felipe Velasco |
 | Fecha del documento | 10 de noviembre de 2026 |
-| Repositorio publicado | [Incorporar enlace cuando esté disponible] |
-| Estado de la entrega | Implementación funcional completada y comprobada en integración; anexos documentales y datos administrativos por adjuntar |
+| Repositorio publicado | https://github.com/JesusxAriel/Practica3_Alexa_Aws_ESP32.git |
+| Estado de la entrega | Integración AWS–Alexa comprobada; nueva ampliación RFID local compilada, pendiente de evidencia de prueba física; evidencias visuales parciales incorporadas |
 
 Este informe describe el código y los resultados funcionales observados en AWS y Alexa Developer Console. No se reproducen archivos privados, certificados ni claves. Se distinguen los flujos probados, las limitaciones detectadas y los anexos documentales todavía por adjuntar.
 
@@ -19,7 +18,7 @@ Este informe describe el código y los resultados funcionales observados en AWS 
 
 Se documenta un prototipo académico de puerta inteligente que utiliza un ESP32 para registrar lecturas de un RFID-RC522 y ejecutar órdenes de bloqueo y desbloqueo mediante un servomotor SG90. La tarjeta autorizada solicita desbloqueo local y el llavero autorizado bloqueo, reutilizando el controlador existente. Se conserva la comunicación remota MQTT/TLS con AWS IoT Core y Device Shadow clásico. El dispositivo publica lecturas y estado comandado, recibe órdenes remotas y reconcilia las órdenes RFID pendientes con desired y reported.
 
-El backend Python incorpora clases para consultar y actualizar el Shadow y para vincular usuarios con dispositivos mediante DynamoDB. La skill Custom de Alexa en español de España fue creada, compilada, enlazada a AWS Lambda y probada en Alexa Developer Console. Se verificaron la invocación, la vinculación con DynamoDB, la consulta del estado del cerrojo, la consulta del contador RFID y el envío de una orden de bloqueo. También se observó movimiento del SG90 después de recuperar la conectividad Wi-Fi del ESP32. Se identificó una confusión en el reconocimiento de una variante de apertura, cuya corrección queda registrada como mejora puntual del modelo de interacción.
+El backend Python incorpora clases para consultar y actualizar el Shadow y para vincular usuarios con dispositivos mediante DynamoDB. La skill Custom de Alexa en español de España fue creada, compilada, enlazada a AWS Lambda y probada en Alexa Developer Console. Se verificaron la invocación, la vinculación con DynamoDB, la consulta del estado del cerrojo, la consulta del contador RFID y el envío de una orden de bloqueo. También se observó movimiento del SG90 después de recuperar la conectividad Wi-Fi del ESP32. Durante el ajuste del modelo se detectó confusión en algunas frases de apertura y cierre; finalmente se comprobó el desbloqueo con «quita el seguro» y el bloqueo con «bloquea la cerradura», ambos con movimiento observado del SG90. Otras expresiones todavía pueden clasificarse incorrectamente.
 
 El registro de limpieza documenta una compilación satisfactoria y ocho pruebas unitarias aprobadas. Estos resultados respaldan la construcción del software y determinados comportamientos del backend. Las interacciones observadas en Alexa Developer Console aportan además evidencia funcional de integración, aunque no constituyen mediciones de precisión mecánica, estabilidad o tiempos de respuesta. El prototipo no mide la apertura física de la puerta ni confirma la posición alcanzada por el servo.
 
@@ -46,7 +45,7 @@ Documentar el diseño y la implementación de un prototipo de puerta inteligente
 - Describir el cableado y la función del RC522 y del SG90 según el código actual.
 - Explicar la organización modular del firmware y su comunicación bidireccional con AWS.
 - Documentar el contrato del Shadow, la resolución de dispositivos por usuario y el backend Python.
-- Describir la integración efectuada con Alexa y los resultados de pruebas ejecutadas, diferenciando las funciones validadas de la incidencia de reconocimiento identificada.
+- Describir la integración efectuada con Alexa y los resultados de pruebas ejecutadas, diferenciando los comandos validados de las variantes de reconocimiento no fiables.
 - Relacionar resultados locales, pruebas declaradas y evidencias pendientes.
 - Identificar las limitaciones mecánicas, de persistencia y de validación del prototipo.
 
@@ -60,7 +59,7 @@ La numeración siguiente conserva la referencia RF1–RF9 del borrador anterior.
 | RF2, reporte | Reporte por cambio y respaldo configurado de 5 s | Implementado con condiciones; periodicidad real por medir |
 | RF3, actuador y Shadow | Aplicación de delta y desired recuperado; reporte del comando | Implementado; sin confirmación mecánica |
 | RF4, consulta de apertura | `EstadoPuertaIntent` conserva lectura de un campo heredado | No respaldado por el hardware actual |
-| RF5, bloqueo/desbloqueo | Intents escriben `desired.cerrojo` | Implementado; consulta y envío de bloqueo desde Alexa comprobados, variante de apertura en ajuste |
+| RF5, bloqueo/desbloqueo | Intents escriben `desired.cerrojo` | Implementado; comandos fiables de bloqueo y desbloqueo comprobados con movimiento observado |
 | RF6, consulta de cerrojo | Consulta `reported.cerrojo` | Implementado; responde sobre el estado de software |
 | RF7, vinculación | Código, validación de Thing y persistencia por usuario | Implementado y cubierto parcialmente por pruebas locales |
 | RF8, usuario sin vinculación | Respuesta que solicita vincular un dispositivo | Comprobado mediante prueba unitaria |
@@ -75,7 +74,7 @@ La numeración siguiente conserva la referencia RF1–RF9 del borrador anterior.
 | Tarjeta y llavero RFID | Objetos comparados con dos UID configurados | Identificadores conservados en firmware; no se reproducen aquí |
 | SG90 | Único actuador: representación del cerrojo | Consignas de posición, no rotación continua |
 | Alimentación USB/5 V disponible en el montaje | Alimentación utilizada durante las pruebas del SG90 | Sin medición de corriente; fuente externa regulada recomendada para una versión robusta |
-| USB, conexiones y masa común | Alimentación del ESP32 y montaje | Fotografía del montaje pendiente |
+| USB, conexiones y masa común | Alimentación del ESP32 y montaje | Fotografías parciales adjuntas; falta vista total con alimentación identificable |
 | PlatformIO y Arduino | Construcción del firmware C++ | Entorno principal único |
 | Python y unittest | Backend y pruebas aisladas | Limpieza validada con Python 3.11 de PlatformIO |
 | AWS IoT Core y Device Shadow | Intercambio de órdenes y reportes | MQTT/TLS, puerto 8883 en firmware |
@@ -167,7 +166,15 @@ El firmware configura 50 Hz y un rango de pulsos de 500 a 2400 µs. La orden de 
 
 Tras el intervalo de comando, `detach()` suspende la generación de pulsos; no desconecta la alimentación. Tampoco demuestra mantenimiento de fuerza o posición bajo carga. Durante las pruebas el SG90 recibió alimentación desde el montaje basado en USB/ESP32; no se midieron corriente ni precisión angular. Para un funcionamiento con carga se recomienda una fuente de 5 V regulada apropiada y masa común, sin alimentarlo desde 3V3.
 
-**Evidencia E01 por anexar:** fotografía general y detalle del cableado real y la alimentación, sin mostrar credenciales ni pantallas privadas.
+**Evidencia E01 — Fotografías del montaje compartidas durante el desarrollo:**
+
+![ESP32 montado en protoboard](evidencias/E01_montaje_esp32.jpg)
+
+*Figura E01-A. Fotografía real del ESP32 durante el armado. No permite verificar por sí sola la alimentación de todos los componentes.*
+
+![Servomotor SG90](evidencias/E01_servomotor_sg90.jpg)
+
+*Figura E01-B. Fotografía del SG90 utilizado en las pruebas. Falta una vista general del circuito completo.*
 
 ## 8. Desarrollo del firmware
 
@@ -190,6 +197,12 @@ Se sondea presencia mediante `PICC_WakeupA()` cada 150 ms, incluso para una tarj
 Cada lectura aceptada incrementa el contador y se compara con los dos UID configurados. `ultimoRFID` mantiene `tarjeta`, `llavero` o `desconocido`, inicialmente `ninguno`. La tarjeta solicita `desbloqueada` (120°), el llavero `bloqueada` (60°), y un UID desconocido no genera orden.
 
 La clasificación autoriza las dos acciones locales descritas a través de `requestLockState()`, sin un segundo controlador PWM. El contador vive en RAM y se reinicia con el ESP32; representa presentaciones aceptadas, no personas distintas ni tarjetas únicas. La supresión de repeticiones debe validarse frente a ruido y pérdidas prolongadas de presencia RF.
+
+**Evidencia E02 — Reconocimiento de los UID durante las pruebas:**
+
+![Detección de tarjeta y llavero RFID en monitor](evidencias/E02_lectura_uid_rfid.png)
+
+*Figura E02. Captura de detección RFID compartida previamente; acredita identificación, no la ejecución de la ampliación local más reciente.*
 
 ### 8.3. Máquina de comando del servo
 
@@ -296,7 +309,11 @@ Las órdenes de bloqueo y desbloqueo escriben exclusivamente `state.desired.cerr
 
 `EstadoPuertaIntent` sigue consultando `reported.puerta` por compatibilidad. Si no hay un valor reconocido, informa falta de lectura. Si permanece un valor histórico `abierta` o `cerrada` en el Shadow, podría responder con ese dato aunque el firmware actual no lo produzca. Las actualizaciones de las otras propiedades no eliminan automáticamente ese campo. No se modificó el Shadow desplegado para corregirlo.
 
-**Evidencias E05 y E06 por anexar:** capturas de eventos/respuestas reales de Lambda y registros de vinculación en DynamoDB, anonimizados. Se realizaron tanto pruebas directas de Lambda como invocaciones reales desde Alexa Developer Console; deben presentarse por separado.
+**Evidencias E05 y E06:** se realizaron pruebas directas de Lambda e invocaciones reales desde Alexa Developer Console; deben diferenciarse. Se adjunta una captura de los dos desencadenadores Alexa asociados a la misma función Lambda. No sustituye una captura de los registros DynamoDB ni de la respuesta de una invocación.
+
+![Disparadores de Lambda asociados a dos skills](evidencias/E05_lambda_dos_skills.png)
+
+*Figura E05. Configuración de AWS Lambda con dos desencadenadores de Alexa Skills Kit, después de conectar la segunda Skill.*
 
 ## 11. Integración implementada con Alexa
 
@@ -307,8 +324,8 @@ La skill Custom **Puerta Inteligente SIS234**, con nombre de invocación **«pue
 | `VincularIntent` | Asociar código de seis cifras con usuario Alexa y Thing mediante DynamoDB | **Comprobado:** respuesta «Puerta vinculada correctamente. Ya puedes consultarla o controlarla» |
 | `EstadoCerrojoIntent` | Consultar `reported.cerrojo` | **Comprobado:** Alexa respondió «La cerradura está desbloqueada» y, posteriormente, «La cerradura está bloqueada» |
 | `LecturasRfidIntent` | Consultar `tarjetasLeidas` | **Comprobado:** «El lector ha registrado 0 lecturas desde el último reinicio» |
-| `BloquearIntent` | Solicitar `desired.cerrojo=bloqueada` | **Comprobado:** Alexa confirmó el envío de orden de bloqueo; hubo observación de movimiento del SG90 tras restablecer el Wi-Fi |
-| `DesbloquearIntent` | Solicitar `desired.cerrojo=desbloqueada` | **Backend comprobado** mediante invocación directa Lambda; en simulador se identificó confusión de una variante de comando con `BloquearIntent` |
+| `BloquearIntent` | Solicitar `desired.cerrojo=bloqueada` | **Comprobado en Alexa:** «bloquea la cerradura» identificó `BloquearIntent` y produjo movimiento del SG90 en la prueba final |
+| `DesbloquearIntent` | Solicitar `desired.cerrojo=desbloqueada` | **Comprobado en Alexa:** «quita el seguro» identificó `DesbloquearIntent` y produjo movimiento del SG90; otras variantes se confundieron |
 | `DesvincularIntent` | Eliminar vinculación del usuario | Implementado y probado con dobles; sin evidencia de invocación desde simulador |
 | `EstadoPuertaIntent` | Consultar campo heredado de apertura | Conservado por compatibilidad; no representa medición física actual |
 | Intents `AMAZON.*` | Ayuda, detener, cancelar y fallback | Incluidos en el modelo |
@@ -321,18 +338,36 @@ La skill Custom **Puerta Inteligente SIS234**, con nombre de invocación **«pue
 | Vincular | `dile a puerta conectada que vincule la puerta con el código [código de demostración]` |
 | Consultar cerradura | `pregunta a puerta conectada cuál es el estado de la cerradura` |
 | Consultar lecturas | `pregunta a puerta conectada cuántas tarjetas se han leído` |
-| Bloquear | `dile a puerta conectada que bloquee la cerradura` |
-| Desbloquear | `dile a puerta conectada que desbloquee la cerradura` |
+| Bloquear (frase validada) | `dile a puerta conectada que bloquee la cerradura` |
+| Desbloquear (frase validada) | `dile a puerta conectada que quite el seguro` |
 
 El código de vinculación se omite en la versión de entrega porque es una credencial de demostración compartible. La respuesta inicial de la skill fue: «Bienvenido a Puerta Conectada. Puedes vincular una puerta, consultar su estado o bloquear la cerradura».
 
 ### 11.2. Incidencia de reconocimiento y alcance de la prueba
 
-Durante una prueba con la variante «pide a puerta conectada que abra el cerrojo», `request.intent.name` se registró como **`BloquearIntent`**, aunque el modelo contiene la frase «abre el cerrojo» dentro de `DesbloquearIntent`. Esta observación **no prueba que el actuador o Lambda ejecuten incorrectamente un intent reconocido**: señala un problema de clasificación del lenguaje natural en esa invocación. Se acordó ampliar y recompilar los ejemplos de ambas intenciones y repetir la verificación; la corrección final todavía no está respaldada por evidencia en este documento.
+Durante una prueba con la variante «pide a puerta conectada que abra el cerrojo», `request.intent.name` se registró como **`BloquearIntent`**, aunque el modelo contiene la frase «abre el cerrojo» dentro de `DesbloquearIntent`. Esta observación **no prueba que el actuador o Lambda ejecuten incorrectamente un intent reconocido**: señala un problema de clasificación del lenguaje natural en esa invocación. Se revisaron frases y se compiló un nuevo modelo. Las pruebas posteriores confirmaron que «quita el seguro» fue reconocido como `DesbloquearIntent` y «bloquea la cerradura» como `BloquearIntent`, con movimientos observados en los dos sentidos. La expresión «pon el seguro» se confundió con desbloqueo, y las variantes «abre el cerrojo» y «desbloquea la cerradura» no fueron fiables. No se afirma que todas las frases sinónimas funcionen.
 
-La orden de bloqueo fue recibida desde Alexa, pero en una primera prueba el servo no se movió porque el ESP32 había perdido conectividad con el hotspot del celular. Al recuperarse la conexión, el equipo observó movimiento del SG90. No se verificó el ángulo físico ni la resistencia mecánica del mecanismo.
+En una primera prueba el servo no se movió porque el ESP32 perdió la conexión con el hotspot. Se restableció la conectividad y, en una prueba posterior, se observó movimiento para desbloqueo y bloqueo por voz. No se midieron ángulos físicos ni resistencia mecánica.
 
-**Evidencia E07:** existen capturas del simulador con invocación, vinculación, consulta RFID, respuesta de bloqueo y JSON Input/Output; se deben adjuntar las seleccionadas a `docs/evidencias/` para que acompañen la versión publicada del informe.
+**Evidencia E07 — Capturas seleccionadas del simulador y la consola:**
+
+![Alexa abre la skill y responde bienvenida](evidencias/E07_alexa_inicio.png)
+
+*Figura E07-A. Invocación y respuesta de bienvenida de Alexa.*
+
+![Alexa consulta RFID y bloquea](evidencias/E07_alexa_rfid_bloqueo.png)
+
+*Figura E07-B. Consulta del contador RFID y confirmación de envío de bloqueo.*
+
+![Intent de desbloqueo en el modelo Alexa](evidencias/E07_modelo_desbloqueo.png)
+
+*Figura E07-C. Configuración de frases de `DesbloquearIntent`. La captura de configuración no demuestra por sí sola la clasificación correcta.*
+
+![Endpoint guardado en la consola Alexa](evidencias/E07_endpoint_guardado.png)
+
+*Figura E07-D. Confirmación de guardado del endpoint de la Skill.*
+
+**Nota:** en las pruebas posteriores el equipo observó movimiento del SG90 para desbloqueo y bloqueo, pero no se compartió un video o captura que documente por sí sola ambos movimientos. Se presenta ese resultado como observación del equipo y no como prueba fotográfica incorporada.
 
 ## 12. Pruebas realizadas y resultados
 
@@ -373,7 +408,7 @@ El campo `puerta=cerrada` de `FakeData` es una fixture histórica, no una lectur
 
 ### 12.4. Pruebas declaradas y anexos faltantes
 
-El contexto del equipo, recogido en README, declara los siguientes ensayos satisfactorios. No se adjuntaron evidencias de hardware o nube en los documentos revisados; por ello no se elevan a resultados independientemente verificados.
+El contexto del equipo, recogido en README, declara los siguientes ensayos satisfactorios. Se incorporaron algunas capturas de hardware y de la consola, pero no documentan por sí solas todos los pasos de cada ensayo; en la tabla siguiente se indican las pruebas complementarias que permitirían sustentarlos.
 
 | Ensayo declarado | Evidencia necesaria para sustentarlo |
 |---|---|
@@ -395,7 +430,7 @@ No se dispone de una campaña de mediciones reproducibles de latencia, exactitud
 | Permanencia en operación | Definir y ejecutar una duración de ensayo y secuencia de lecturas | Reinicios, fallos y observaciones durante todo el período |
 | Latencia de orden | Correlacionar envío, recepción y fin de comando con metodología explícita | Muestras, condiciones y tiempos; sin inventar promedios |
 | Estado sin realimentación | Contrastar orden, reported y observación externa | Separar posición solicitada de posición medida, si hubiera medición |
-| Reconocimiento de variantes Alexa | Reconstruir modelo y repetir apertura/cierre con `intent.name` visible | Captura de JSON Input y resultado; incidencia de clasificación identificada |
+| Reconocimiento de variantes Alexa | Mantener y evaluar frases no fiables separadamente de los dos comandos aprobados | Nuevas capturas por variante, sin tokens ni identificadores personales |
 
 Estos ensayos ampliados son recomendaciones de validación adicional y no impiden describir el prototipo como funcionalmente implementado. Los resultados que se agreguen deberán indicar fecha, responsable, método, condiciones y evidencia.
 
@@ -409,16 +444,18 @@ Las siguientes pruebas fueron realizadas durante la configuración de AWS Lambda
 | IA-02 | Vincular dispositivo con código de demostración | «Puerta vinculada correctamente. Ya puedes consultarla o controlarla» | Comprobada |
 | IA-03 | Consultar estado del cerrojo | Respuesta «La cerradura está desbloqueada»; en otra consulta «bloqueada» | Comprobada como lectura del Shadow |
 | IA-04 | Consultar contador RFID | «El lector ha registrado 0 lecturas desde el último reinicio» | Comprobada; valor dependiente del reinicio |
-| IA-05 | Bloquear mediante Alexa | «He enviado la orden de bloquear la cerradura. Puedes consultar su estado para verificarla» | Envío comprobado; no equivale a confirmación mecánica |
+| IA-05 | Bloquear mediante Alexa | «Bloquea la cerradura» → `BloquearIntent`; orden enviada y movimiento observado en prueba final | Comprobada funcionalmente; sin sensor de ángulo |
 | IA-06 | Recuperación de conectividad ESP32 | El equipo identificó desconexión del hotspot y observó movimiento del servo al reconectar | Observación funcional, sin registro cronometrado |
-| IA-07 | Variante «abre el cerrojo» | JSON Input indicó `BloquearIntent` en lugar de `DesbloquearIntent` | Incidencia de lenguaje natural documentada |
-| IA-08 | Desbloqueo mediante prueba directa de Lambda | Orden `desired=desbloqueada` y mensaje serie del servo a 120° fueron observados en prueba previa | Comprobada desde Lambda, no atribuida a Alexa |
+| IA-07 | Variantes de apertura | «Abre el cerrojo» y «desbloquea la cerradura» se clasificaron como `BloquearIntent` durante pruebas | Incidencia de lenguaje natural; no usar esas frases en la demostración |
+| IA-08 | Desbloqueo desde Lambda | Orden `desired=desbloqueada` y mensaje serie del servo a 120° observados en prueba previa | Comprobada desde Lambda |
+| IA-09 | Desbloquear mediante Alexa | «Quita el seguro» → `DesbloquearIntent`; Alexa anunció desbloqueo y el servo se movió | Comprobada funcionalmente |
+| IA-10 | Bloquear después del desbloqueo | «Bloquea la cerradura» → `BloquearIntent`; el servo se movió y la consulta posterior reportó `bloqueada` | Comprobada funcionalmente |
 
 En las pruebas directas de Lambda se observaron respuestas correctas de consulta y envío de órdenes, pero también duraciones próximas a ocho segundos en varias invocaciones. No se realizaron suficientes mediciones controladas para reportar un promedio de latencia o garantizar cumplimiento de un tiempo máximo. El hecho de que una respuesta de Alexa indique «orden enviada» **no demuestra por sí mismo** que el actuador completó físicamente el movimiento.
 
 ### 12.7. Ampliación posterior: control RFID local
 
-La versión ampliada recompiló satisfactoriamente en `esp32doit-devkit-v1`: RAM 45 768 bytes (14,0 %) y flash 914 801 bytes (69,8 %). Se ejecutaron nuevamente las ocho pruebas existentes de Lambda, todas aprobadas. Estos resultados son distintos del build anterior registrado en 12.2. No se ejecutaron upload ni pruebas de hardware o AWS para esta ampliación. El plan de tarjeta, llavero, tarjeta sostenida, conflictos, reconexión y Alexa se encuentra en [CONTROL_RFID_LOCAL.md](CONTROL_RFID_LOCAL.md) y permanece pendiente de validación real.
+La versión ampliada recompiló satisfactoriamente en `esp32doit-devkit-v1`: RAM 45 768 bytes (14,0 %) y flash 914 801 bytes (69,8 %). Se ejecutaron nuevamente las ocho pruebas existentes de Lambda, todas aprobadas. Estos resultados son distintos del build anterior registrado en 12.2. El registro de Codex no acredita upload ni pruebas de hardware o AWS de esta ampliación; en esta revisión no se recibió una salida nueva del monitor que confirme la ejecución física con RFID local. El plan de tarjeta, llavero, tarjeta sostenida, conflictos, reconexión y Alexa se encuentra en [CONTROL_RFID_LOCAL.md](CONTROL_RFID_LOCAL.md) y requiere evidencias específicas del nuevo comportamiento RFID local.
 
 ## 13. Problemas encontrados y soluciones aplicadas
 
@@ -433,7 +470,7 @@ La versión ampliada recompiló satisfactoriamente en `esp32doit-devkit-v1`: RAM
 | Restricción de permisos en caché PlatformIO | Compilación autorizada con acceso a su caché durante limpieza | Build final satisfactorio |
 | Advertencia en core Arduino | Conservación de la dependencia y registro de advertencia | No resuelta en código externo |
 | Acceso a Amazon Developer | Se resolvió el acceso y se creó/compiló la skill | Integración de Alexa realizada y probada |
-| Confusión entre frases de apertura y bloqueo | Se identificó `BloquearIntent` ante la frase «abre el cerrojo»; se preparó ampliación de frases de ejemplo | Mejora de reconocimiento por verificar tras recompilar |
+| Confusión entre frases de apertura y bloqueo | Se ajustó el modelo y se identificaron frases fiables («quita el seguro» / «bloquea la cerradura») | Control en ambas direcciones comprobado; sinónimos aún no fiables |
 | ESP32 desconectado del hotspot durante orden de Alexa | Se recuperó la conexión Wi-Fi del dispositivo | El equipo observó movimiento del SG90 al restablecerse la conectividad |
 | Sin repositorio Git en la carpeta revisada | Copias locales de recuperación; sin commits ni push | Historial no auditable desde esta carpeta |
 
@@ -449,7 +486,7 @@ La copia documental anterior está en `.cleanup-backups/documentacion-antes-2026
 - **Entrega y actualidad:** no existe una confirmación de cada reporte aceptado por el Shadow ni comprobación de antigüedad de las consultas. Una pérdida de conectividad puede dejar datos desactualizados.
 - **Vinculación:** los códigos son compartibles; no se observa caducidad, uso único, límite de intentos ni exclusividad de propietario. Dos usuarios pueden vincular el mismo Thing si conocen el código.
 - **Validación:** los tests locales usan dobles; adicionalmente se ejecutaron pruebas reales en AWS y Alexa. Falta adjuntar capturas al informe y realizar ensayos instrumentados de fallos y mediciones reproducibles.
-- **Alexa:** la skill está creada, compilada y enlazada con Lambda; invocación, vinculación, consultas y envío de bloqueo se comprobaron desde el simulador. Persiste una incidencia de clasificación de una variante de apertura y no hay validación de extremo a extremo de todas las variantes e intents.
+- **Alexa:** las dos órdenes principales de voz se comprobaron con movimiento observado del SG90. Algunas frases alternativas aún pueden confundirse; no se probaron todos los intents ni todas las formulaciones posibles.
 - **Seguridad física:** la alimentación y el mecanismo no cuentan con ensayos de carga, consumo o retención incorporados. El prototipo no debe utilizarse como cerradura de seguridad.
 
 Como trabajo futuro se recomienda incorporar realimentación si se necesita conocer posición real, definir tratamiento de datos antiguos, ampliar pruebas de errores y reconexión, y fortalecer el ciclo de vida de los códigos. Estas medidas no forman parte de la implementación actual y no se aplicaron durante la documentación.
@@ -460,7 +497,7 @@ El repositorio conserva el registro RFID y el control remoto del SG90, y añade 
 
 La compilación satisfactoria y las ocho pruebas unitarias registradas respaldan la construcción del firmware y una parte del comportamiento del backend. No permiten concluir que se cumplieron metas de latencia, estabilidad o precisión física. Las pruebas de hardware y AWS declaradas por el equipo requieren los anexos indicados para su evaluación académica.
 
-La integración con Alexa se implementó y se verificó funcionalmente en Alexa Developer Console para la apertura de la skill, vinculación de usuario, consulta del cerrojo, consulta RFID y envío de una orden de bloqueo; el movimiento del SG90 se observó tras restablecer la conexión del ESP32. El estado del cerrojo sigue siendo una representación de software, no una medida física. Queda documentada una incidencia específica de reconocimiento de frases de apertura, sin que esto invalide los flujos ya comprobados. La incorporación de capturas y datos administrativos es una tarea de presentación, no una funcionalidad de software por implementar.
+La integración con Alexa se verificó funcionalmente en Alexa Developer Console para invocación, vinculación, consulta del cerrojo, consulta RFID y las órdenes fiables de desbloqueo y bloqueo; se observó movimiento del SG90 en ambos sentidos. El estado del cerrojo sigue siendo una representación de software, no una medida física. Queda documentada la clasificación incorrecta de algunas frases alternativas, sin que esto invalide los dos comandos que funcionaron. La incorporación de capturas y datos administrativos es una tarea de presentación, no una funcionalidad de software por implementar.
 
 ## 16. Referencias técnicas
 
@@ -496,23 +533,27 @@ Se conservan los enlaces oficiales que ya figuraban en el repositorio, como mate
 
 ### 17.1. Inventario de anexos documentales
 
-Los identificadores siguientes organizan la documentación visual del proyecto. Las pruebas de integración descritas se realizaron, pero este archivo Markdown no incorpora todavía las imágenes de esas sesiones. Se recomienda adjuntar las capturas y fotografías auténticas a `docs/evidencias/`; no se incluyen enlaces ficticios.
+Los identificadores siguientes organizan la documentación visual del proyecto. Este informe incorpora una selección de fotografías y capturas auténticas proporcionadas durante el trabajo. Algunas capturas se recortaron para reducir la exposición de datos de cuenta. Cada imagen demuestra solo lo visible; la ausencia de una captura de una prueba no significa que se haya realizado con evidencia adjunta.
 
-| ID | Ubicación prevista en el informe | Evidencia pendiente |
+| ID | Ubicación en el informe | Estado de evidencia |
 |---|---|---|
-| E01 | Sección 7 | Fotografías del prototipo y cableado, fuente y masa común |
-| E02 | Secciones 8 y 12 | Monitor serial: reconocimiento RC522, tarjeta/llavero y contador |
+| E01 | Sección 7 | **Adjuntas parcialmente**: fotografías del montaje y del SG90; falta una vista global que documente toda la alimentación |
+| E02 | Secciones 8 y 12 | **Adjunta parcialmente**: captura de identificación RFID; falta monitor con movimientos por RFID local de la versión nueva |
 | E03 | Sección 9 | Thing, conectividad y permisos anonimizados; sin certificados ni claves |
 | E04 | Secciones 6 y 9 | Secuencia de orden AWS, delta recibido y reported posterior |
-| E05 | Sección 10 | Eventos y respuestas de Lambda para consulta y control |
+| E05 | Sección 10 | **Adjunta parcialmente**: configuración de disparadores Lambda; las invocaciones detalladas no están incorporadas en esta selección |
 | E06 | Sección 10 | Vinculación de usuario de prueba en DynamoDB, anonimizada |
-| E07 | Secciones 11 y 12 | Capturas existentes de la consola Alexa: bienvenida, vinculación, consulta RFID, estado, bloqueo y JSON de clasificación |
+| E07 | Secciones 11 y 12 | **Adjuntas parcialmente**: bienvenida, consulta RFID, bloqueo, configuración de modelo y endpoint; falta evidencia visual de ambos movimientos físicos |
 | E08 | Sección 12 | Salidas completas del build y de las ocho pruebas; el resumen está registrado |
 | E09 | Sección 12 | Ensayos de estabilidad, latencia y reconexión con método y condiciones |
 
 Cada anexo deberá incluir título, fecha, responsable, procedimiento y una descripción breve de lo que demuestra. Anonimizar identificadores de usuario, datos de cuenta y cualquier información privada. No adjuntar `config.h`, archivos de certificados, claves, contraseñas ni tokens. Un video de movimiento no prueba por sí solo el ángulo alcanzado.
 
-### 17.2. Reproducción de comprobaciones locales
+### 17.2. Relación de archivos de evidencia incorporados
+
+Las imágenes de este paquete se encuentran en `docs/evidencias/`. Para que aparezcan al publicar el Markdown, conservar el árbol de carpetas al subirlo al repositorio. No publicar capturas completas de JSON Input que contengan `apiAccessToken`.
+
+### 17.3. Reproducción de comprobaciones locales
 
 Desde la raíz, con Python disponible:
 
@@ -528,6 +569,6 @@ pio run -e esp32doit-devkit-v1
 
 Estos comandos son instrucciones de reproducción. La compilación no carga el dispositivo y las pruebas unitarias no invocan Lambda real. Las capturas de herramientas deben mostrar resultado y contexto suficiente sin divulgar secretos.
 
-### 17.3. Datos administrativos pendientes
+### 17.4. Datos administrativos pendientes
 
-Completar institución, carrera, docente, grupo, integrantes, contribuciones y enlace del repositorio. La ausencia de estos datos y de los anexos indicados se mantiene explícita para no sustituir información real por contenido inventado.
+Los integrantes y el repositorio ya están identificados. Faltan institución/carrera, docente, grupo formal y atribución de contribuciones verificables. Las evidencias físicas de la ampliación RFID y las mediciones de rendimiento siguen sin documentarse; no se inventan.
