@@ -1,0 +1,45 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "puerta conectada",
+      "intents": [
+        {"name": "AMAZON.CancelIntent", "samples": []},
+        {"name": "AMAZON.StopIntent", "samples": []},
+        {"name": "AMAZON.HelpIntent", "samples": []},
+        {"name": "AMAZON.FallbackIntent", "samples": []},
+        {
+          "name": "VincularIntent",
+          "slots": [{"name": "codigo", "type": "AMAZON.NUMBER"}],
+          "samples": [
+            "vincula mi puerta con el código {codigo}",
+            "vincula con el código {codigo}",
+            "cambia mi puerta al código {codigo}",
+            "asocia mi dispositivo con el número {codigo}"
+          ]
+        },
+        {"name": "DesvincularIntent", "samples": [
+          "desvincula mi puerta", "elimina la vinculación", "desvincula mi dispositivo"
+        ]},
+        {"name": "BloquearIntent", "samples": [
+          "bloquea la cerradura", "cierra el cerrojo", "asegura la puerta"
+        ]},
+        {"name": "DesbloquearIntent", "samples": [
+          "desbloquea la cerradura", "abre el cerrojo", "desbloquea la puerta"
+        ]},
+        {"name": "EstadoPuertaIntent", "samples": [
+          "la puerta está abierta", "la puerta está cerrada",
+          "dime el estado de la puerta", "cómo está la puerta"
+        ]},
+        {"name": "EstadoCerrojoIntent", "samples": [
+          "la cerradura está bloqueada", "dime el estado del cerrojo",
+          "cuál es el estado de la cerradura"
+        ]},
+        {"name": "LecturasRfidIntent", "samples": [
+          "cuántas tarjetas se han leído", "cuántas lecturas RFID hay",
+          "dime cuántas tarjetas se registraron"
+        ]}
+      ],
+      "types": []
+    }
+  }
+}
