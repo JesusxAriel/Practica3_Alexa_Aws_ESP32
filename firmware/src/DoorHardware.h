@@ -11,7 +11,7 @@ class DoorHardware {
   void begin();
   bool update();
 
-  // Control del servo desde AWS
+  // Control compartido por AWS y RFID, sin confirmacion mecanica.
   bool requestLockState(const String& state);
 
   // Información para Device Shadow
@@ -20,6 +20,8 @@ class DoorHardware {
   String lastRFID() const { return lastRFID_; }
   bool rfidAvailable() const { return rfidAvailable_; }
   bool isServoMoving() const { return moving_; }
+  unsigned long localRequestId() const { return localRequestId_; }
+  String localLockRequest() const { return localLockRequest_; }
 
  private:
   MFRC522 rfid_;
@@ -27,6 +29,13 @@ class DoorHardware {
 
   unsigned long cardsRead_ = 0;
   unsigned long lastCardAt_ = 0;
+  unsigned long lastCardPoll_ = 0;
+  unsigned long lastCardSeen_ = 0;
+  bool cardLatched_ = false;
+  byte lastUid_[10] = {};
+  byte lastUidSize_ = 0;
+  unsigned long localRequestId_ = 0;
+  String localLockRequest_;
 
   String lastRFID_ = "ninguno";
   bool rfidAvailable_ = false;

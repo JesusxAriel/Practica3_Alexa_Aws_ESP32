@@ -37,9 +37,20 @@ void CloudShadow::connectMqtt() {
   mqtt_.subscribe((shadowPrefix_ + "/get/accepted").c_str(), 1);
   mqtt_.subscribe((shadowPrefix_ + "/get/rejected").c_str(), 1);
   mqtt_.subscribe((shadowPrefix_ + "/update/rejected").c_str(), 1);
+  haveVersion_ = false;
+  shadowVersion_ = 0;
+  requestShadow();
+}
+
+void CloudShadow::requestShadow() {
+  getToken_ = String("get-") + String(millis()) + "-" + String(++tokenSequence_);
+  JsonDocument request;
+  request["clientToken"] = getToken_;
+  char buffer[96];
+  serializeJson(request, buffer, sizeof(buffer));
   waitingForGet_ = true;
   requestedGetAt_ = millis();
-  mqtt_.publish((shadowPrefix_ + "/get").c_str(), "");
+  mqtt_.publish((shadowPrefix_ + "/get").c_str(), buffer);
 }
 
 void CloudShadow::applyDesired(JsonVariantConst desired) {
@@ -59,18 +70,48 @@ void CloudShadow::onMessage(char* topic, byte* payload, unsigned int length) {
   }
   String receivedTopic(topic);
   if (receivedTopic.endsWith("/update/delta")) {
+    // Una orden RFID pendiente prevalece hasta comprobar su convergencia en AWS.
+    if (localPending_) return;
+    const uint32_t version = document["version"] | 0U;
+    if (haveVersion_ && version <= shadowVersion_) return;
+    shadowVersion_ = version;
+    haveVersion_ = true;
+    if (waitingForGet_) return; // GET anterior a este delta se volvera a solicitar.
     applyDesired(document["state"].as<JsonVariantConst>());
   } else if (receivedTopic.endsWith("/get/accepted")) {
-    // Importante: aplicar el desired pendiente ANTES de confirmar reported.
-    applyDesired(document["state"]["desired"].as<JsonVariantConst>());
+    if (!waitingForGet_ || getToken_ != (document["clientToken"] | "")) return;
+    const uint32_t version = document["version"] | 0U;
+    if (haveVersion_ && version < shadowVersion_) {
+      requestShadow();
+      return;
+    }
+    shadowVersion_ = version;
+    haveVersion_ = true;
     waitingForGet_ = false;
+    if (localPending_) {
+      const String desired = document["state"]["desired"]["cerrojo"] | "";
+      const String reported = document["state"]["reported"]["cerrojo"] | "";
+      if (!hardware_.isServoMoving() && desired == localDesired_ &&
+          reported == localDesired_) {
+        localPending_ = false;
+        Serial.println("[AWS] Orden RFID sincronizada (estado de software).");
+      }
+    } else {
+      applyDesired(document["state"]["desired"].as<JsonVariantConst>());
+    }
     if (!hardware_.isServoMoving()) report();
   } else if (receivedTopic.endsWith("/get/rejected")) {
-    waitingForGet_ = false; // Shadow inexistente (404) u otro error.
-    Serial.println("[AWS] GET rechazado; revisar el código devuelto.");
-    report(); // Crea Shadow inicial si falta. Para otros errores quedará en log.
+    if (!waitingForGet_ || getToken_ != (document["clientToken"] | "")) return;
+    if ((document["code"] | 0) == 404) {
+      waitingForGet_ = false;
+      haveVersion_ = false;
+      shadowVersion_ = 0;
+      report(); // Crear Shadow; para otros errores conservar espera y reintentar.
+    }
+    Serial.println("[AWS] GET rechazado; revisar permisos o existencia del Shadow.");
   } else if (receivedTopic.endsWith("/update/rejected")) {
-    Serial.println("[AWS] UPDATE rechazado; comprobar política del Thing.");
+    Serial.println("[AWS] UPDATE rechazado; resincronizar version/permisos.");
+    if (localPending_ && !waitingForGet_) requestShadow();
   }
 }
 
@@ -85,6 +126,14 @@ void CloudShadow::report() {
   }
 
   JsonDocument document;
+
+  if (localPending_) {
+    // Una sola escritura reconcilia la orden local y el estado comandado.
+    // CAS evita sobrescribir silenciosamente un documento que cambio tras GET.
+    if (millis() - lastReport_ < 1000) return;
+    document["state"]["desired"]["cerrojo"] = localDesired_;
+    if (haveVersion_) document["version"] = shadowVersion_;
+  }
 
   JsonObject reported =
       document["state"]["reported"].to<JsonObject>();
@@ -115,6 +164,9 @@ void CloudShadow::report() {
 
     Serial.println("[AWS] Estado enviado a Device Shadow:");
     Serial.println(buffer);
+    // publish() no confirma persistencia. GET valida ambos campos antes de soltar
+    // la prioridad local; si se pierde la conexion, se conserva en RAM.
+    if (localPending_) requestShadow();
   } else {
     Serial.println("[AWS] Error publicando Device Shadow.");
   }
@@ -122,6 +174,12 @@ void CloudShadow::report() {
 
 void CloudShadow::update(bool hardwareChanged) {
   const unsigned long now = millis();
+  if (localRequestSeen_ != hardware_.localRequestId()) {
+    localRequestSeen_ = hardware_.localRequestId();
+    localDesired_ = hardware_.localLockRequest();
+    localPending_ = true;
+    if (mqtt_.connected()) requestShadow();
+  }
   if (WiFi.status() != WL_CONNECTED) {
     if (now - lastWifiAttempt_ >= 5000) {
       lastWifiAttempt_ = now;
@@ -145,10 +203,9 @@ void CloudShadow::update(bool hardwareChanged) {
   if (!mqtt_.connected()) return;
   mqtt_.loop();
   // Evitar quedar bloqueado por pérdida de respuesta GET.
-  if (waitingForGet_ && now - requestedGetAt_ >= 8000) {
-    mqtt_.publish((shadowPrefix_ + "/get").c_str(), "");
-    requestedGetAt_ = now;
+  if (waitingForGet_ && millis() - requestedGetAt_ >= 8000) {
+    requestShadow();
     Serial.println("[AWS] Reintentando sincronización Shadow...");
   }
-  if (hardwareChanged || now - lastReport_ >= SHADOW_REPORT_INTERVAL_MS) report();
+  if (hardwareChanged || millis() - lastReport_ >= SHADOW_REPORT_INTERVAL_MS) report();
 }

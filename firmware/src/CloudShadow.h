@@ -16,6 +16,7 @@ class CloudShadow {
   void connectMqtt();
   void report();
   void applyDesired(JsonVariantConst desired);
+  void requestShadow();
   DoorHardware& hardware_;
   WiFiClientSecure tls_;
   PubSubClient mqtt_;
@@ -25,4 +26,11 @@ class CloudShadow {
   unsigned long lastReport_ = 0;
   unsigned long requestedGetAt_ = 0;
   bool waitingForGet_ = true;
+  unsigned long localRequestSeen_ = 0;
+  bool localPending_ = false;
+  String localDesired_;
+  String getToken_;
+  unsigned long tokenSequence_ = 0;
+  uint32_t shadowVersion_ = 0;
+  bool haveVersion_ = false;
 };

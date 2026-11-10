@@ -48,7 +48,8 @@ bool DoorHardware::requestLockState(const String& state) {
     return false;
   }
 
-  if (!moving_ && state == lockState_) {
+  if ((!moving_ && state == lockState_) ||
+      (moving_ && state == targetLockState_)) {
     return true;
   }
 
@@ -96,11 +97,28 @@ bool DoorHardware::update() {
         lockState_.c_str());
   }
 
-  // Verificar nuevas tarjetas RFID
-  if (rfidAvailable_ &&
-      now - lastCardAt_ >= 1200 &&
-      rfid_.PICC_IsNewCardPresent() &&
-      rfid_.PICC_ReadCardSerial()) {
+  // WUPA detecta tambien una tarjeta en HALT para no confundirla con retirada.
+  if (!rfidAvailable_ || now - lastCardPoll_ < 150) return changed;
+  lastCardPoll_ = now;
+  byte atqa[2];
+  byte atqaSize = sizeof(atqa);
+  const auto presence = rfid_.PICC_WakeupA(atqa, &atqaSize);
+  if (presence == MFRC522::STATUS_TIMEOUT) {
+    if (now - lastCardSeen_ >= 750) cardLatched_ = false;
+    return changed;
+  }
+  // Errores/colisiones no demuestran ausencia: no rearmar por una lectura fallida.
+  lastCardSeen_ = now;
+  if (!rfid_.PICC_ReadCardSerial()) return changed;
+
+  bool sameCard = cardLatched_ && lastUidSize_ == rfid_.uid.size;
+  for (byte i = 0; sameCard && i < lastUidSize_; ++i) {
+    sameCard = lastUid_[i] == rfid_.uid.uidByte[i];
+  }
+  if (!sameCard && now - lastCardAt_ >= 1200) {
+    cardLatched_ = true;
+    lastUidSize_ = rfid_.uid.size;
+    for (byte i = 0; i < lastUidSize_; ++i) lastUid_[i] = rfid_.uid.uidByte[i];
 
     lastCardAt_ = now;
     cardsRead_++;
@@ -134,12 +152,16 @@ bool DoorHardware::update() {
         "[RFID] Tipo: %s | Lecturas: %lu\n",
         lastRFID_.c_str(), cardsRead_);
 
-    // RFID solo reporta; el servo lo controla AWS.
+    if (esTarjeta || esLlavero) {
+      localLockRequest_ = esTarjeta ? "desbloqueada" : "bloqueada";
+      requestLockState(localLockRequest_);
+      ++localRequestId_;
+    }
     changed = true;
-
-    rfid_.PICC_HaltA();
-    rfid_.PCD_StopCrypto1();
   }
+
+  rfid_.PICC_HaltA();
+  rfid_.PCD_StopCrypto1();
 
   return changed;
 }
