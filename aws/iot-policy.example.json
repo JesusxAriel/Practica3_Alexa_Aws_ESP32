@@ -1,0 +1,38 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["iot:Connect"],
+      "Resource": "arn:aws:iot:REGION:ACCOUNT_ID:client/THING_NAME"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["iot:Publish"],
+      "Resource": [
+        "arn:aws:iot:REGION:ACCOUNT_ID:topic/$aws/things/THING_NAME/shadow/get",
+        "arn:aws:iot:REGION:ACCOUNT_ID:topic/$aws/things/THING_NAME/shadow/update"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["iot:Subscribe"],
+      "Resource": [
+        "arn:aws:iot:REGION:ACCOUNT_ID:topicfilter/$aws/things/THING_NAME/shadow/get/accepted",
+        "arn:aws:iot:REGION:ACCOUNT_ID:topicfilter/$aws/things/THING_NAME/shadow/get/rejected",
+        "arn:aws:iot:REGION:ACCOUNT_ID:topicfilter/$aws/things/THING_NAME/shadow/update/delta",
+        "arn:aws:iot:REGION:ACCOUNT_ID:topicfilter/$aws/things/THING_NAME/shadow/update/rejected"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["iot:Receive"],
+      "Resource": [
+        "arn:aws:iot:REGION:ACCOUNT_ID:topic/$aws/things/THING_NAME/shadow/get/accepted",
+        "arn:aws:iot:REGION:ACCOUNT_ID:topic/$aws/things/THING_NAME/shadow/get/rejected",
+        "arn:aws:iot:REGION:ACCOUNT_ID:topic/$aws/things/THING_NAME/shadow/update/delta",
+        "arn:aws:iot:REGION:ACCOUNT_ID:topic/$aws/things/THING_NAME/shadow/update/rejected"
+      ]
+    }
+  ]
+}

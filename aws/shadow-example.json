@@ -1,0 +1,11 @@
+{
+  "state": {
+    "desired": {"cerrojo": "bloqueada"},
+    "reported": {
+      "cerrojo": "desconocido",
+      "tarjetasLeidas": 0,
+      "ultimoRFID": "ninguno",
+      "rfid_available": false
+    }
+  }
+}

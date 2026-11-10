@@ -1,0 +1,23 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ValidateOnlyPracticeThings",
+      "Effect": "Allow",
+      "Action": ["iot:DescribeThing"],
+      "Resource": "arn:aws:iot:REGION:ACCOUNT_ID:thing/puerta-sis234-*"
+    },
+    {
+      "Sid": "OperateOnlyPracticeShadows",
+      "Effect": "Allow",
+      "Action": ["iot:GetThingShadow", "iot:UpdateThingShadow"],
+      "Resource": "arn:aws:iot:REGION:ACCOUNT_ID:thing/puerta-sis234-*"
+    },
+    {
+      "Sid": "LinkStorage",
+      "Effect": "Allow",
+      "Action": ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem"],
+      "Resource": "arn:aws:dynamodb:REGION:ACCOUNT_ID:table/PuertaAlexaBindings"
+    }
+  ]
+}
