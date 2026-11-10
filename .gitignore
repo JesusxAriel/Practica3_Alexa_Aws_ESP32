@@ -1,0 +1,9 @@
+.pio/
+**/.pio/
+**/include/config.h
+**/include/aws_certificates.h
+.env
+**/.env
+*.pem
+*.key
+*.crt
